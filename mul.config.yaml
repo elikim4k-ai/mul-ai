@@ -1,0 +1,87 @@
+# Mul AI (물 AI) — worker pool + tier definitions.
+# Everything here is hot-swappable: no provider, model, or GPU is hard-coded in src/.
+
+tiers:
+  mul:
+    orchestrate_bias: low        # prefer the fast path
+    max_workers: 4               # parallel worker dispatch bound
+    max_depth: 1                 # recursion depth cap
+    verify_passes: 1
+    max_worker_calls: 8          # hard cap on total worker calls per request
+    wall_clock_seconds: 90
+    max_spend_usd: 0.50
+  mul-ultra:
+    orchestrate_bias: high       # more willing to decompose and recurse
+    max_workers: 8
+    max_depth: 2
+    verify_passes: 2
+    max_worker_calls: 24
+    wall_clock_seconds: 300
+    max_spend_usd: 5.00
+
+conductor:
+  serving: mock                  # mock | vllm — set to vllm in prod (Vultr GPU box)
+  base_url: http://localhost:8000/v1
+  model_id: Qwen/Qwen2.5-32B-Instruct   # swap candidates: LGAI-EXAONE / Upstage Solar-Pro
+  gpu: A100-80GB                 # or L40S-48GB for a 7B–14B conductor
+  tier_rank: 1
+  cost_per_1m_input: 0.0         # local open-weight model — no per-token provider cost
+  cost_per_1m_output: 0.0
+
+# capabilities vocabulary: code, math, korean, long_context, reasoning, vision
+# tier_rank drives both capability resolution (highest eligible wins) and the
+# blended billing rate (rate of the top-rank participant, see src/mul/billing/pricing.py).
+pool:
+  # ── Korean-first ──
+  - provider: upstage
+    model_id: solar-pro          # TODO(owner): confirm exact model id
+    capabilities: [korean, reasoning]
+    cost_per_1m_input: 0.0       # TODO(owner): fill real prices — do not invent
+    cost_per_1m_output: 0.0      # TODO(owner)
+    tier_rank: 3
+    enabled: true
+  - provider: lg
+    model_id: exaone-4.0         # TODO(owner): confirm exact model id + serving endpoint
+    capabilities: [korean, code]
+    cost_per_1m_input: 0.0       # TODO(owner)
+    cost_per_1m_output: 0.0      # TODO(owner)
+    tier_rank: 3
+    enabled: true
+  - provider: naver
+    model_id: hyperclova-x       # TODO(owner): confirm exact CLOVA Studio model id
+    capabilities: [korean, long_context]
+    cost_per_1m_input: 0.0       # TODO(owner)
+    cost_per_1m_output: 0.0      # TODO(owner)
+    tier_rank: 3
+    enabled: true
+  # ── International frontier (disabled until keys + prices are supplied) ──
+  - provider: openai
+    model_id: gpt-TODO           # TODO(owner)
+    capabilities: [code, reasoning]
+    cost_per_1m_input: 0.0       # TODO(owner)
+    cost_per_1m_output: 0.0      # TODO(owner)
+    tier_rank: 5
+    enabled: false
+  - provider: anthropic
+    model_id: claude-TODO        # TODO(owner)
+    capabilities: [code, reasoning, long_context]
+    cost_per_1m_input: 0.0       # TODO(owner)
+    cost_per_1m_output: 0.0      # TODO(owner)
+    tier_rank: 5
+    enabled: false
+  - provider: google
+    model_id: gemini-TODO        # TODO(owner)
+    capabilities: [reasoning, vision]
+    cost_per_1m_input: 0.0       # TODO(owner)
+    cost_per_1m_output: 0.0      # TODO(owner)
+    tier_rank: 5
+    enabled: false
+  # ── Open-weight / self-hosted ──
+  - provider: vllm
+    model_id: Qwen/Qwen2.5-7B-Instruct
+    base_url: http://localhost:8001/v1
+    capabilities: [code, korean, math]
+    cost_per_1m_input: 0.0
+    cost_per_1m_output: 0.0
+    tier_rank: 1
+    enabled: true
