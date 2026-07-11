@@ -1,0 +1,14 @@
+[Unit]
+Description=Mul AI gateway (OpenAI-compatible API)
+After=network-online.target mul-vllm.service
+Wants=mul-vllm.service
+
+[Service]
+WorkingDirectory=__APP_DIR__
+EnvironmentFile=-__APP_DIR__/.env
+ExecStart=__APP_DIR__/.venv/bin/uvicorn --factory mul.gateway.app:create_app --host 0.0.0.0 --port 8080
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

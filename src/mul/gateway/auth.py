@@ -34,7 +34,7 @@ class Authenticator:
         }
         self._open_mode = not self._keys and not self._admin_keys
         if self._open_mode:
-            log.warning("no MUL_API_KEYS configured — running in OPEN DEV MODE")
+            log.warning("no MUL_API_KEYS configured - running in OPEN DEV MODE")
         self._allow: dict[str, set[str]] = {}
         if settings.mul_key_provider_allow:
             raw = json.loads(settings.mul_key_provider_allow)

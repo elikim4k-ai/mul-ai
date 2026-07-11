@@ -1,0 +1,44 @@
+# Run from the repo root:  docker compose -f deploy/docker-compose.yml up
+# The gateway alone (conductor serving: mock) needs no GPU.
+# `--profile gpu` additionally starts the vLLM conductor (set conductor.serving: vllm
+# and conductor.base_url: http://vllm:8000/v1 in mul.config.yaml).
+
+services:
+  gateway:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    ports:
+      - "8080:8080"
+    env_file:
+      - ../.env
+    volumes:
+      - ../mul.config.yaml:/app/mul.config.yaml:ro
+      - mul-data:/app/data
+    environment:
+      MUL_DB_URL: sqlite:////app/data/mul_usage.db
+    restart: unless-stopped
+
+  vllm:
+    profiles: ["gpu"]
+    image: vllm/vllm-openai:latest
+    command: >
+      --model ${CONDUCTOR_MODEL:-Qwen/Qwen2.5-32B-Instruct}
+      --max-model-len ${CONDUCTOR_MAX_LEN:-16384}
+      --gpu-memory-utilization ${CONDUCTOR_GPU_UTIL:-0.92}
+    ports:
+      - "8000:8000"
+    volumes:
+      - hf-cache:/root/.cache/huggingface
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    restart: unless-stopped
+
+volumes:
+  mul-data:
+  hf-cache:

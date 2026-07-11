@@ -46,7 +46,7 @@ class WorkerRegistry:
             client = self._build_client(entry, settings)
             if client.is_stub:
                 log.warning(
-                    "provider key missing — registered as mock stub",
+                    "provider key missing - registered as mock stub",
                     provider=entry.provider,
                     model_id=entry.model_id,
                 )
@@ -94,7 +94,7 @@ class WorkerRegistry:
             return NaverClovaClient(
                 model_id=entry.model_id, api_key=settings.naver_clova_api_key, **kwargs
             )
-        log.warning("unknown provider — registered as mock stub", provider=p)
+        log.warning("unknown provider - registered as mock stub", provider=p)
         return stub()
 
     def eligible(

@@ -1,0 +1,7 @@
+# Minimal smoke suite — replace with real coding / reasoning / KR-language suites in Phase 6.
+- id: ko-greeting
+  prompt: "안녕하세요! 자기소개를 해 주세요."
+  expect_keywords: []
+- id: simple-math
+  prompt: "What is 12 * 12? Answer with the number."
+  expect_keywords: ["144"]
