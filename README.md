@@ -17,17 +17,24 @@ one answer. Callers only ever see two models: `mul` and `mul-ultra`.
 
 ## Quickstart (keyless, no GPU) · 빠른 시작
 
+Prerequisites: Git and Python 3.11+. Run from the repository root.
+
 ```bash
+git clone https://github.com/elikim4k-ai/mul-ai.git
+cd mul-ai
 python -m venv .venv && . .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -e ".[dev]"
-pytest                                          # 32 tests, no API keys needed
-uvicorn --factory mul.gateway.app:create_app --port 8080
+python -m pytest -q                             # no API keys needed
+python -m uvicorn --factory mul.gateway.app:create_app --host 127.0.0.1 --port 8080
 ```
 
 `mul.config.yaml` ships with `conductor.serving: mock`, and any pool provider without an
 API key in `.env` runs as a deterministic mock stub — so the full system (triage → plan →
 parallel workers → verify → synthesise → blended billing) runs end-to-end with zero keys.
 Add real keys to `.env` (copy `.env.example`) and providers activate automatically.
+
+The example client requires an extra package: `python -m pip install openai`.
+Run it in another terminal while the server is running.
 
 Talk to it with any stock OpenAI SDK:
 
@@ -113,3 +120,33 @@ deploy/              Dockerfile, docker-compose, Vultr provision + systemd
 - **Phase 6** — eval harness: coding / reasoning / KR suites, Mul vs baselines, cost report.
 - **Phase 7 (research)** — learned coordinator (evolutionary / RL routing policy). The
   prompt-orchestrated conductor stays the stable default.
+
+## Validate and reproduce the keyless demo
+
+On Windows PowerShell, create the environment with `python -m venv .venv`
+and activate it with `.\.venv\Scripts\Activate.ps1`; then run the same
+install, pytest, and server commands above. Use a fresh checkout without a
+`.env` file and with provider API-key environment variables unset for mock mode.
+
+With the server running, visit `http://127.0.0.1:8080/healthz` and
+`http://127.0.0.1:8080/v1/models`. The models response must expose `mul` and
+`mul-ultra`. The supplied Python streaming example should print nonempty text.
+The gateway tests exercise non-streaming responses, SSE termination, auth,
+provider exclusion, and admin trace visibility without making provider calls.
+
+Mock replies validate software behavior, not language-model quality. The
+`evals/` directory is a harness skeleton; no comparative quality, cost, or
+latency benchmark is established by passing unit tests. Billing rates remain
+placeholders. Live-provider output and latency vary.
+
+Record `git rev-parse HEAD`, `python --version`, `python -m pip freeze`,
+`mul.config.yaml`, the request, and the provider/mock mode with any reported
+result. Dependencies use lower bounds rather than a lockfile. Usage is stored
+in `mul_usage.db` by default; use a fresh working copy for a fresh demo ledger.
+Never include provider secrets in a shared reproduction bundle.
+
+## License and contributions
+
+See [LICENSE](LICENSE). Include a minimal request, configuration with secrets
+removed, expected/actual response, and dependency versions in bug reports.
+Run `python -m pytest -q` before submitting changes.
